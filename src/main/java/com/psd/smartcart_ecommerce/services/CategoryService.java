@@ -1,12 +1,13 @@
 package com.psd.smartcart_ecommerce.services;
 
-import com.psd.smartcart_ecommerce.models.Category;
-
-import java.util.List;
+import com.psd.smartcart_ecommerce.payload.CategoryDTO;
+import com.psd.smartcart_ecommerce.payload.CategoryResponse;
 
 public interface CategoryService {
-    List<Category> getAllCategories();
-    void createCategory(Category category);
-    String deleteCategory(Long categoryId);
-    Category updateCategory(Category category, Long categoryId);
+    CategoryResponse getAllCategories(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
+    CategoryDTO createCategory(CategoryDTO categoryDTO);
+
+    CategoryDTO deleteCategory(Long categoryId);
+
+    CategoryDTO updateCategory(CategoryDTO categoryDTO, Long categoryId);
 }
