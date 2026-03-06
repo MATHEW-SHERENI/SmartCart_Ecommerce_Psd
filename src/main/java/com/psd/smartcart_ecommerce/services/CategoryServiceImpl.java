@@ -1,11 +1,11 @@
 package com.psd.smartcart_ecommerce.services;
-
 import com.psd.smartcart_ecommerce.exceptions.APIException;
 import com.psd.smartcart_ecommerce.exceptions.ResourceNotFoundException;
 import com.psd.smartcart_ecommerce.models.Category;
 import com.psd.smartcart_ecommerce.payload.CategoryDTO;
 import com.psd.smartcart_ecommerce.payload.CategoryResponse;
 import com.psd.smartcart_ecommerce.repositories.CategoryRepository;
+import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

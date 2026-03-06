@@ -2,10 +2,13 @@ package com.psd.smartcart_ecommerce.services;
 
 import com.psd.smartcart_ecommerce.exceptions.APIException;
 import com.psd.smartcart_ecommerce.exceptions.ResourceNotFoundException;
+import com.psd.smartcart_ecommerce.models.Cart;
 import com.psd.smartcart_ecommerce.models.Category;
 import com.psd.smartcart_ecommerce.models.Product;
+import com.psd.smartcart_ecommerce.payload.CartDTO;
 import com.psd.smartcart_ecommerce.payload.ProductDTO;
 import com.psd.smartcart_ecommerce.payload.ProductResponse;
+import com.psd.smartcart_ecommerce.repositories.CartRepository;
 import com.psd.smartcart_ecommerce.repositories.CategoryRepository;
 import com.psd.smartcart_ecommerce.repositories.ProductRepository;
 import org.modelmapper.ModelMapper;
@@ -20,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -29,6 +33,12 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private CartService cartService;
+
+    @Autowired
+    private CartRepository cartRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -176,7 +186,6 @@ public class ProductServiceImpl implements ProductService {
         productResponse.setLastPage(pageProducts.isLast());
         return productResponse;
     }
-
     @Override
     public ProductDTO updateProduct(Long productId, ProductDTO productDTO) {
         Product productFromDb = productRepository.findById(productId)
@@ -193,8 +202,25 @@ public class ProductServiceImpl implements ProductService {
 
         Product savedProduct = productRepository.save(productFromDb);
 
+        List<Cart> carts = cartRepository.findCartsByProductId(productId);
+
+        List<CartDTO> cartDTOs = carts.stream().map(cart -> {
+            CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
+
+            List<ProductDTO> products = cart.getCartItems().stream()
+                    .map(p -> modelMapper.map(p.getProduct(), ProductDTO.class)).collect(Collectors.toList());
+
+            cartDTO.setProducts(products);
+
+            return cartDTO;
+
+        }).collect(Collectors.toList());
+
+        cartDTOs.forEach(cart -> cartService.updateProductInCarts(cart.getCartId(), productId));
+
         return modelMapper.map(savedProduct, ProductDTO.class);
     }
+
 
     @Override
     public ProductDTO deleteProduct(Long productId) {
