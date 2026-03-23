@@ -1,6 +1,9 @@
 package com.psd.smartcart_ecommerce.repositories;
 
+import com.psd.smartcart_ecommerce.models.AppRole;
 import com.psd.smartcart_ecommerce.models.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,4 +17,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Boolean existsByUserName(String username);
 
     Boolean existsByEmail(String email);
+
+    Page<User> findByRoleName(AppRole appRole, Pageable pageable);
 }
