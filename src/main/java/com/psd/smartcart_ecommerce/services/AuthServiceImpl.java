@@ -3,6 +3,7 @@ package com.psd.smartcart_ecommerce.services;
 import com.psd.smartcart_ecommerce.models.AppRole;
 import com.psd.smartcart_ecommerce.models.Role;
 import com.psd.smartcart_ecommerce.models.User;
+import com.psd.smartcart_ecommerce.payload.AuthenticationResult;
 import com.psd.smartcart_ecommerce.repositories.RoleRepository;
 import com.psd.smartcart_ecommerce.repositories.UserRepository;
 import com.psd.smartcart_ecommerce.security.jwt.JwtUtils;

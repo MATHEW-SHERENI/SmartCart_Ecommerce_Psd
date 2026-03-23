@@ -1,5 +1,6 @@
 package com.psd.smartcart_ecommerce.services;
 
+import com.psd.smartcart_ecommerce.payload.AuthenticationResult;
 import com.psd.smartcart_ecommerce.security.request.LoginRequest;
 import com.psd.smartcart_ecommerce.security.request.SignupRequest;
 import com.psd.smartcart_ecommerce.security.response.MessageResponse;
