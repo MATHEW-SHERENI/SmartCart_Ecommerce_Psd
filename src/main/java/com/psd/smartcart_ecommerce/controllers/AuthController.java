@@ -13,6 +13,7 @@ import com.psd.smartcart_ecommerce.security.response.MessageResponse;
 import com.psd.smartcart_ecommerce.security.response.UserInfoResponse;
 import com.psd.smartcart_ecommerce.security.services.UserDetailsImpl;
 import com.psd.smartcart_ecommerce.security.services.UserDetailsServiceImpl;
+import com.psd.smartcart_ecommerce.services.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -48,6 +49,9 @@ public class AuthController {
 
     @Autowired
     PasswordEncoder encoder;
+
+    @Autowired
+    AuthService authService;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
