@@ -1,7 +1,9 @@
 package com.psd.smartcart_ecommerce.controllers;
 
+import com.psd.smartcart_ecommerce.config.AppConstants;
 import com.psd.smartcart_ecommerce.payload.OrderDTO;
 import com.psd.smartcart_ecommerce.payload.OrderRequestDTO;
+import com.psd.smartcart_ecommerce.payload.OrderResponse;
 import com.psd.smartcart_ecommerce.payload.StripePaymentDto;
 import com.psd.smartcart_ecommerce.services.OrderService;
 import com.psd.smartcart_ecommerce.services.StripeService;
@@ -49,17 +51,17 @@ public class OrderController {
         PaymentIntent paymentIntent = stripeService.paymentIntent(stripePaymentDto);
         return new ResponseEntity<>(paymentIntent.getClientSecret(), HttpStatus.CREATED);
     }
-//
-//    @GetMapping("/admin/orders")
-//    public ResponseEntity<OrderResponse> getAllOrders(
-//            @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
-//            @RequestParam(name = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
-//            @RequestParam(name = "sortBy", defaultValue = AppConstants.SORT_ORDERS_BY, required = false) String sortBy,
-//            @RequestParam(name = "sortOrder", defaultValue = AppConstants.SORT_DIR, required = false) String sortOrder
-//    ) {
-//        OrderResponse orderResponse = orderService.getAllOrders(pageNumber, pageSize, sortBy, sortOrder);
-//        return new ResponseEntity<OrderResponse>(orderResponse, HttpStatus.OK);
-//    }
+
+    @GetMapping("/admin/orders")
+    public ResponseEntity<OrderResponse> getAllOrders(
+            @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
+            @RequestParam(name = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
+            @RequestParam(name = "sortBy", defaultValue = AppConstants.SORT_ORDERS_BY, required = false) String sortBy,
+            @RequestParam(name = "sortOrder", defaultValue = AppConstants.SORT_DIR, required = false) String sortOrder
+    ) {
+        OrderResponse orderResponse = orderService.getAllOrders(pageNumber, pageSize, sortBy, sortOrder);
+        return new ResponseEntity<OrderResponse>(orderResponse, HttpStatus.OK);
+    }
 //
 //    @GetMapping("/seller/orders")
 //    public ResponseEntity<OrderResponse> getAllSellerOrders(
