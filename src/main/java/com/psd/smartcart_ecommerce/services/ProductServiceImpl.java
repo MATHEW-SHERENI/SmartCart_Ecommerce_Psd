@@ -5,12 +5,14 @@ import com.psd.smartcart_ecommerce.exceptions.ResourceNotFoundException;
 import com.psd.smartcart_ecommerce.models.Cart;
 import com.psd.smartcart_ecommerce.models.Category;
 import com.psd.smartcart_ecommerce.models.Product;
+import com.psd.smartcart_ecommerce.models.User;
 import com.psd.smartcart_ecommerce.payload.CartDTO;
 import com.psd.smartcart_ecommerce.payload.ProductDTO;
 import com.psd.smartcart_ecommerce.payload.ProductResponse;
 import com.psd.smartcart_ecommerce.repositories.CartRepository;
 import com.psd.smartcart_ecommerce.repositories.CategoryRepository;
 import com.psd.smartcart_ecommerce.repositories.ProductRepository;
+import com.psd.smartcart_ecommerce.util.AuthUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +30,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class ProductServiceImpl implements ProductService {
+    @Autowired
+    private CartRepository cartRepository;
+
+
+    @Autowired
+    private CartService cartService;
 
     @Autowired
     private ProductRepository productRepository;
@@ -35,16 +44,13 @@ public class ProductServiceImpl implements ProductService {
     private CategoryRepository categoryRepository;
 
     @Autowired
-    private CartService cartService;
-
-    @Autowired
-    private CartRepository cartRepository;
-
-    @Autowired
     private ModelMapper modelMapper;
 
     @Autowired
     private FileService fileService;
+
+    @Autowired
+    AuthUtil authUtil;
 
     @Value("${project.image}")
     private String path;
@@ -72,6 +78,7 @@ public class ProductServiceImpl implements ProductService {
             Product product = modelMapper.map(productDTO, Product.class);
             product.setImage("default.png");
             product.setCategory(category);
+            product.setUser(authUtil.loggedInUser());
             double specialPrice = product.getPrice() -
                     ((product.getDiscount() * 0.01) * product.getPrice());
             product.setSpecialPrice(specialPrice);
@@ -84,25 +91,23 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
-        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+     Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
 
         Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+
         Page<Product> pageProducts = productRepository.findAll(pageDetails);
 
         List<Product> products = pageProducts.getContent();
+
         List<ProductDTO> productDTOS = products.stream()
-                .map(product ->{
-                    ProductDTO productDTO = modelMapper.map(product,ProductDTO.class);
+                .map(product -> {
+                    ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
                     productDTO.setImage(constructImageUrl(product.getImage()));
                     return productDTO;
                 })
                 .toList();
-
-//        List<ProductDTO> productDTOS = products.stream()
-//                .map(product -> modelMapper.map(product, ProductDTO.class))
-//                .toList();
 
         ProductResponse productResponse = new ProductResponse();
         productResponse.setContent(productDTOS);
@@ -114,7 +119,67 @@ public class ProductServiceImpl implements ProductService {
         return productResponse;
     }
 
-    private String constructImageUrl(String imageName){
+    @Override
+    public ProductResponse getAllProductsForAdmin(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+        Page<Product> pageProducts = productRepository.findAll(pageDetails);
+
+        List<Product> products = pageProducts.getContent();
+
+        List<ProductDTO> productDTOS = products.stream()
+                .map(product -> {
+                    ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
+                    productDTO.setImage(constructImageUrl(product.getImage()));
+                    return productDTO;
+                })
+                .toList();
+
+        ProductResponse productResponse = new ProductResponse();
+        productResponse.setContent(productDTOS);
+        productResponse.setPageNumber(pageProducts.getNumber());
+        productResponse.setPageSize(pageProducts.getSize());
+        productResponse.setTotalElements(pageProducts.getTotalElements());
+        productResponse.setTotalPages(pageProducts.getTotalPages());
+        productResponse.setLastPage(pageProducts.isLast());
+        return productResponse;
+    }
+
+    @Override
+    public ProductResponse getAllProductsForSeller(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+
+        User user = authUtil.loggedInUser();
+        Page<Product> pageProducts = productRepository.findByUser(user, pageDetails);
+
+        List<Product> products = pageProducts.getContent();
+
+        List<ProductDTO> productDTOS = products.stream()
+                .map(product -> {
+                    ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
+                    productDTO.setImage(constructImageUrl(product.getImage()));
+                    return productDTO;
+                })
+                .toList();
+
+        ProductResponse productResponse = new ProductResponse();
+        productResponse.setContent(productDTOS);
+        productResponse.setPageNumber(pageProducts.getNumber());
+        productResponse.setPageSize(pageProducts.getSize());
+        productResponse.setTotalElements(pageProducts.getTotalElements());
+        productResponse.setTotalPages(pageProducts.getTotalPages());
+        productResponse.setLastPage(pageProducts.isLast());
+        return productResponse;
+    }
+
+    private String constructImageUrl(String imageName) {
         return imageBaseUrl.endsWith("/") ? imageBaseUrl + imageName : imageBaseUrl + "/" + imageName;
     }
 
@@ -140,14 +205,6 @@ public class ProductServiceImpl implements ProductService {
         List<ProductDTO> productDTOS = products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .toList();
-
-//        List<ProductDTO> productDTOS = products.stream()
-//                .map(product ->{
-//                    ProductDTO productDTO = modelMapper.map(product,ProductDTO.class);
-//                    productDTO.setImage(constructImageUrl(product.getImage()));
-//                    return productDTO;
-//                })
-//                .toList();
 
         ProductResponse productResponse = new ProductResponse();
         productResponse.setContent(productDTOS);
@@ -186,6 +243,7 @@ public class ProductServiceImpl implements ProductService {
         productResponse.setLastPage(pageProducts.isLast());
         return productResponse;
     }
+
     @Override
     public ProductDTO updateProduct(Long productId, ProductDTO productDTO) {
         Product productFromDb = productRepository.findById(productId)
@@ -221,11 +279,14 @@ public class ProductServiceImpl implements ProductService {
         return modelMapper.map(savedProduct, ProductDTO.class);
     }
 
-
     @Override
     public ProductDTO deleteProduct(Long productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+        // DELETE
+        List<Cart> carts = cartRepository.findCartsByProductId(productId);
+        carts.forEach(cart -> cartService.deleteProductFromCart(cart.getCartId(), productId));
 
         productRepository.delete(product);
         return modelMapper.map(product, ProductDTO.class);
