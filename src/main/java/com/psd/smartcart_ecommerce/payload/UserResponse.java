@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserResponse {
-
     private List<UserDTO> content;
     private Integer pageNumber;
     private Integer pageSize;
