@@ -65,13 +65,16 @@ public class AuthServiceImpl implements AuthService {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
         ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
+        // IMPORTANT: return raw JWT for Authorization header usage.
+        // (The cookie string includes attributes like Path/Max-Age which breaks Bearer auth.)
+        String jwtToken = jwtUtils.generateTokenFromUsername(userDetails.getUsername());
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
         UserInfoResponse response = new UserInfoResponse(userDetails.getId(),
-                userDetails.getUsername(), roles, userDetails.getEmail(), jwtCookie.toString());
+                userDetails.getUsername(), roles, userDetails.getEmail(), jwtToken);
 
         return new AuthenticationResult(response, jwtCookie);
     }

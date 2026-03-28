@@ -1,13 +1,16 @@
 package com.psd.smartcart_ecommerce.services;
+import com.psd.smartcart_ecommerce.payload.StripeCheckoutSessionDto;
 import com.psd.smartcart_ecommerce.payload.StripePaymentDto;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.model.CustomerSearchResult;
+import com.stripe.model.checkout.Session;
 import com.stripe.model.PaymentIntent;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerSearchParams;
 import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.checkout.SessionCreateParams;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,6 +73,63 @@ public class StripeServiceImpl implements StripeService {
                         .build();
 
         return PaymentIntent.create(params);
+    }
+
+    @Override
+    public Session createCheckoutSession(StripeCheckoutSessionDto dto) throws StripeException {
+        // Retrieve and/or create customer (same approach as PaymentIntent)
+        Customer customer;
+        CustomerSearchParams searchParams =
+                CustomerSearchParams.builder()
+                        .setQuery("email:'" + dto.getEmail() + "'")
+                        .build();
+        CustomerSearchResult customers = Customer.search(searchParams);
+
+        if (customers.getData().isEmpty()) {
+            CustomerCreateParams customerParams = CustomerCreateParams.builder()
+                    .setEmail(dto.getEmail())
+                    .setName(dto.getName())
+                    .build();
+            customer = Customer.create(customerParams);
+        } else {
+            customer = customers.getData().get(0);
+        }
+
+        // Create Checkout Session
+        SessionCreateParams.LineItem lineItem =
+                SessionCreateParams.LineItem.builder()
+                        .setQuantity(1L)
+                        .setPriceData(
+                                SessionCreateParams.LineItem.PriceData.builder()
+                                        .setCurrency(dto.getCurrency())
+                                        .setUnitAmount(dto.getAmount())
+                                        .setProductData(
+                                                SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                                        .setName(dto.getName())
+                                                        .build()
+                                        )
+                                        .build()
+                        )
+                        .build();
+
+        SessionCreateParams.Builder params = SessionCreateParams.builder()
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setSuccessUrl(dto.getSuccessUrl())
+                .setCancelUrl(dto.getCancelUrl())
+                .setCustomer(customer.getId())
+               // .setCustomerEmail(dto.getEmail())
+                .addLineItem(lineItem);
+
+        if (dto.getMetadata() != null && !dto.getMetadata().isEmpty()) {
+            dto.getMetadata().forEach((key, value) -> params.putMetadata(key, value));
+        }
+
+        // Use description as metadata (Checkout Session doesn't have the same field like PaymentIntent)
+        if (dto.getDescription() != null && !dto.getDescription().isBlank()) {
+            params.putMetadata("description", dto.getDescription());
+        }
+
+        return Session.create(params.build());
     }
 
 }
