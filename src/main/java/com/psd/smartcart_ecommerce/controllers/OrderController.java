@@ -7,11 +7,15 @@ import com.psd.smartcart_ecommerce.services.StripeService;
 import com.psd.smartcart_ecommerce.util.AuthUtil;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.checkout.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -47,6 +51,16 @@ public class OrderController {
         System.out.println("StripePaymentDTO Received " + stripePaymentDto);
         PaymentIntent paymentIntent = stripeService.paymentIntent(stripePaymentDto);
         return new ResponseEntity<>(paymentIntent.getClientSecret(), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/order/stripe-checkout-session")
+    public ResponseEntity<Map<String, String>> createStripeCheckoutSession(
+            @RequestBody StripeCheckoutSessionDto dto
+    ) throws StripeException {
+        Session session = stripeService.createCheckoutSession(dto);
+        Map<String, String> body = new HashMap<>();
+        body.put("url", session.getUrl()); // frontend will redirect to this URL
+        return new ResponseEntity<>(body, HttpStatus.CREATED);
     }
 
     @GetMapping("/admin/orders")

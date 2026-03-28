@@ -57,9 +57,36 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     }
 
     private String parseJwt(HttpServletRequest request) {
+        // Primary: read JWT from cookie (backend design)
         String jwt = jwtUtils.getJwtFromCookies(request);
-        logger.debug("AuthTokenFilter.java: {}", jwt);
-        return jwt;
+        if (jwt != null && !jwt.isBlank()) {
+            logger.debug("AuthTokenFilter.java: jwt from cookie");
+            return jwt;
+        }
+
+        // Fallback: also accept Bearer token from Authorization header.
+        // This helps when the cookie is missing/expired but the frontend still has a token.
+        String authorization = request.getHeader("Authorization");
+        if (authorization != null && authorization.toLowerCase().startsWith("bearer ")) {
+            String token = authorization.substring(7);
+            if (!token.isBlank()) {
+                // Be defensive: frontend might accidentally send a cookie-like string instead of raw JWT.
+                // Extract the actual JWT substring (3 dot-separated segments).
+                String jwtMatch =
+                        token.replaceAll("^[Bb]earer\\s+", "")
+                             .replaceAll(".*?([A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+=*).*", "$1");
+
+                if (jwtMatch != null && !jwtMatch.isBlank() && jwtMatch.contains(".")) {
+                    logger.debug("AuthTokenFilter.java: jwt from Authorization header");
+                    return jwtMatch;
+                }
+
+                logger.debug("AuthTokenFilter.java: authorization token used as-is");
+                return token;
+            }
+        }
+
+        return null;
     }
 }
 
